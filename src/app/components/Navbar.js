@@ -10,7 +10,6 @@ const Navbar = () => {
   const notificationRef = useRef();
   const profileRef = useRef();
 
-  // Fetch alert on mount
   useEffect(() => {
     const fetchAlert = async () => {
       try {
@@ -27,7 +26,6 @@ const Navbar = () => {
     fetchAlert();
   }, []);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (
@@ -49,7 +47,6 @@ const Navbar = () => {
   return (
     <div className="bg-[#6ca896] flex w-full justify-end items-center pr-8 py-2">
       <div className="relative flex items-center space-x-6">
-        {/* Notification Bell */}
         <div ref={notificationRef} className="relative">
           <FaBell
             size={24}
@@ -63,10 +60,8 @@ const Navbar = () => {
   <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-md p-4 z-10 border border-gray-200">
     {alert ? (
       <div className="flex items-start gap-3">
-        {/* Alert Icon */}
       
 
-        {/* Alert Content */}
         <div className="flex-1">
           <h3 className="text-md font-semibold text-red-700 mb-1">🚨 Data Missing Alert</h3>
           <p className="text-sm text-gray-800"><strong>Client:</strong> Metalware</p>
@@ -90,7 +85,6 @@ const Navbar = () => {
 
         </div>
 
-        {/* Profile Icon */}
         <div ref={profileRef} className="relative">
           <FaUser
             size={24}
