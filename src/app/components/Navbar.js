@@ -10,6 +10,11 @@ const Navbar = () => {
   const notificationRef = useRef();
   const profileRef = useRef();
 
+  const handleLogout = () => {
+    Cookies.remove('authData', { domain: '.elementsenergies.com', path: '/' });
+    window.location.href = 'https://elementsenergies.com/login';
+  };
+
   useEffect(() => {
     const fetchAlert = async () => {
       try {
@@ -22,7 +27,6 @@ const Navbar = () => {
         console.error("Failed to fetch alerts", err);
       }
     };
-
     fetchAlert();
   }, []);
 
@@ -97,7 +101,7 @@ const Navbar = () => {
           {showProfile && (
             <div className="absolute right-0 mt-2 w-40 bg-white shadow-md rounded-md p-4 z-10">
               <p className="text-sm font-semibold text-gray-800 mb-2">Hi Admin</p>
-              <button className="text-sm text-red-600 hover:underline">Logout</button>
+              <button className="text-sm text-red-600 hover:underline" onClick={handleLogout}>Logout</button>
             </div>
           )}
         </div>
