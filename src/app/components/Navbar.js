@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { FaBell, FaUser } from 'react-icons/fa';
+import Cookies from 'js-cookie'; 
+
 
 const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -101,7 +103,7 @@ const Navbar = () => {
           {showProfile && (
             <div className="absolute right-0 mt-2 w-40 bg-white shadow-md rounded-md p-4 z-10">
               <p className="text-sm font-semibold text-gray-800 mb-2">Hi Admin</p>
-              <button className="text-sm text-red-600 hover:underline" onClick={handleLogout}>Logout</button>
+              <button className="text-sm text-red-600 hover:underline cursor-pointer" onClick={handleLogout}>Logout</button>
             </div>
           )}
         </div>
