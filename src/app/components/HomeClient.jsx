@@ -47,14 +47,12 @@ export default function HomeClient({
 
     fetchActiveUsers();
 
-    // Optional: auto-refresh every 60 seconds
     const interval = setInterval(fetchActiveUsers, 60000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="flex flex-col p-2 gap-2 h-full">
-      {/* Top Cards */}
       <div className="grid grid-cols-4 bg-white w-full p-5 rounded-md">
         <div className="flex flex-col border-r border-gray-300 justify-center items-center">
           <h1 className="text-black text-lg">Clients</h1>
@@ -74,9 +72,7 @@ export default function HomeClient({
         </div>
       </div>
 
-      {/* Main Content Split */}
       <div className="flex gap-2 flex-1">
-        {/* Left Column - Map + Active Users */}
         <div className="flex flex-col gap-2 w-1/2 h-full">
           <div className="w-full flex-1 bg-white rounded-md overflow-hidden shadow border">
             <MapClientWrapper />
@@ -99,9 +95,7 @@ export default function HomeClient({
           </div>
         </div>
 
-        {/* Right Column - Alerts + Pipeline */}
         <div className="flex gap-2 w-1/2 h-full text-black">
-          {/* Alerts */}
           <div className="w-1/2 bg-white rounded-md shadow flex flex-col">
             <h1 className="text-xl font-bold px-5 pt-5 mb-4">Alerts</h1>
             <div className="flex-1 px-5 pb-5">
@@ -128,7 +122,6 @@ export default function HomeClient({
             </div>
           </div>
 
-          {/* Client Pipeline */}
           <div className="w-1/2 bg-white rounded-md shadow flex flex-col">
             <h1 className="text-xl font-bold p-5">Client Pipeline</h1>
             <div className="border border-gray-300 bg-white rounded-md p-4 mx-4 flex-1">

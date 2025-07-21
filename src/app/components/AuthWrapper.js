@@ -7,7 +7,7 @@ import Navbar from "./Navbar";
 export default function AuthWrapper({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false); 
 
-  /*useEffect(() => {
+  useEffect(() => {
     const checkAuth = async () => {
       try {
         const res = await fetch("/api/auth", {
@@ -33,9 +33,10 @@ export default function AuthWrapper({ children }) {
     };
 
     checkAuth();
-  }, []);*/
+  }, []);
 
   return (
+    isAuthenticated && (
     <>
       <div className="fixed w-[15%] h-screen">
         <Sidebar />
@@ -47,5 +48,6 @@ export default function AuthWrapper({ children }) {
         <div className="h-[94%] mt-12 bg-gray-100">{children}</div>
       </div>
     </>
+    )
   );
 }
