@@ -25,15 +25,6 @@ export default function HomeClient({
     }
   };
 
-  const getProgressValue = (pipeline) => {
-    let completed = 0;
-    if (pipeline.site_visit_status === 'completed') completed++;
-    if (pipeline.installation_status === 'completed') completed++;
-    if (pipeline.testing_status === 'completed') completed++;
-    if (pipeline.handover_status === 'completed') completed++;
-    return (completed / 4) * 100;
-  };
-
   useEffect(() => {
     const fetchActiveUsers = async () => {
       try {
@@ -94,7 +85,6 @@ export default function HomeClient({
             </div>
           </div>
         </div>
-
         <div className="flex gap-2 w-1/2 h-full text-black">
           <div className="w-1/2 bg-white rounded-md shadow flex flex-col">
             <h1 className="text-xl font-bold px-5 pt-5 mb-4">Alerts</h1>
@@ -121,31 +111,26 @@ export default function HomeClient({
               )}
             </div>
           </div>
-
           <div className="w-1/2 bg-white rounded-md shadow flex flex-col">
-            <h1 className="text-xl font-bold p-5">Client Pipeline</h1>
-            <div className="border border-gray-300 bg-white rounded-md p-4 mx-4 flex-1">
-              <h1 className="font-medium mb-3">{clientPipeline.client_name}</h1>
-              <progress
-                value={getProgressValue(clientPipeline)}
-                max="100"
-                className="w-full h-2 mb-3 [&::-webkit-progress-bar]:rounded-md [&::-webkit-progress-value]:rounded-md [&::-webkit-progress-bar]:bg-gray-200 [&::-webkit-progress-value]:bg-blue-500"
-              />
-              <div className="space-y-2">
-                {['site_visit_status', 'installation_status', 'testing_status', 'handover_status'].map(status => (
-                  <div key={status} className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${getStatus(clientPipeline[status])}`}></div>
-                    <span className="text-sm">
-                      {capitalizeWords(status.replace('_status', '').replace('_', ' '))}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      {capitalizeWords(clientPipeline[status])}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+  <h1 className="text-xl font-bold p-5">Client Pipeline</h1>
+  <div className="bg-white rounded-md p-4 mx-4 flex-1">
+    <h1 className="font-medium mb-4">{clientPipeline.client_name}</h1>
+    
+    <div className="flex items-center justify-between bg-gray-50 rounded px-4 py-2">
+      <div className="flex items-center space-x-2">
+        <div className={`w-3 h-3 rounded-full ${getStatus(clientPipeline['handover_status'])}`}></div>
+        <span className="text-sm font-medium">
+          {capitalizeWords('handover')}
+        </span>
+      </div>
+      <span className="text-sm text-gray-600">
+        {capitalizeWords(clientPipeline['handover_status'])}
+      </span>
+    </div>
+
+  </div>
+</div>
+
         </div>
       </div>
     </div>

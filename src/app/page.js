@@ -50,7 +50,7 @@ export default async function Home() {
     }
   }
 
-  // 4. Pass all props including alert
+  // 4. Pass all pros including alert
   return (
     <HomeClient
       clients={clients}
