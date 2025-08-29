@@ -87,4 +87,22 @@ export async function PUT(req) {
       return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
   }
+
+  export async function DELETE(req) {
+    try {
+      const { id } = await req.json();
+  
+      if (!id) {
+        return NextResponse.json({ error: "Missing ID for delete" }, { status: 400 });
+      }
+  
+      await query(`DELETE FROM clients WHERE id = ?`, [id]);
+  
+      return NextResponse.json({ success: true });
+    } catch (err) {
+      console.error("DELETE /clients error:", err);
+      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+  }
+  
   
