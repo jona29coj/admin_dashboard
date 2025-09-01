@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import * as XLSX from "xlsx";
 
 const ClientDetails = () => {
   const { id } = useParams();
@@ -20,7 +21,7 @@ const ClientDetails = () => {
       console.log("📊 Fetched data:", data);
       const safeData = Array.isArray(data) ? data : [];
       setDetails(safeData);
-      setOriginalDetails(JSON.parse(JSON.stringify(safeData))); 
+      setOriginalDetails(JSON.parse(JSON.stringify(safeData)));
     } catch (error) {
       console.error("Failed to fetch client details:", error);
     }
@@ -32,7 +33,6 @@ const ClientDetails = () => {
   }, [id, nameFromQuery]);
 
   const handleAddRow = () => {
-    // Check if there's already a pending unsaved row
     const hasPending = details.some((row) => !row.id);
     if (hasPending) return;
 
@@ -44,8 +44,7 @@ const ClientDetails = () => {
       minutes_of_meeting: "",
       action_required: "",
       follow_up_date: "",
-      // Add a temporary flag to track new rows
-      _isNew: true
+      _isNew: true,
     };
 
     setDetails([...details, newRow]);
@@ -60,17 +59,26 @@ const ClientDetails = () => {
 
   const handleBlur = () => setEditing({ row: null, key: null });
 
+  // Handle keyboard events (Enter to save, Escape to cancel)
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    }
+    if (e.key === 'Escape') {
+      setEditing({ row: null, key: null });
+    }
+  };
+
   const handleDoubleClick = (rowIndex, key) => {
     setEditing({ row: rowIndex, key });
   };
 
   const handleDeleteRow = async (rowId, rowIndex) => {
-    // For unsaved rows (no ID), just remove from local state
     if (!rowId) {
       setDetails(details.filter((_, index) => index !== rowIndex));
       return;
     }
-    
+
     if (!confirm("Are you sure you want to delete this record?")) return;
 
     try {
@@ -100,146 +108,137 @@ const ClientDetails = () => {
     { key: "follow_up_date", label: "Follow-up Date" },
   ];
 
-  // Helper function to check if a row has changes
   const hasRowChanged = (currentRow, originalRow) => {
-    if (!originalRow) return true; // New row
-    
-    return columns.some(col => {
+    if (!originalRow) return true;
+    return columns.some((col) => {
       const currentValue = currentRow[col.key] || "";
       const originalValue = originalRow[col.key] || "";
       return currentValue !== originalValue;
     });
   };
 
-  // Helper function to check if all required fields are filled
-  const isRowComplete = (row) => {
-    return columns.every(col => 
-      row[col.key] !== undefined && 
-      row[col.key].toString().trim() !== ""
+  // Checks that at least one field is filled
+  const hasAnyFieldFilled = (row) => {
+    return columns.some(
+      (col) =>
+        row[col.key] !== undefined && row[col.key].toString().trim() !== ""
     );
   };
 
   const handleApplyChanges = async () => {
     console.log("🔄 Starting apply changes...");
-    
+  
     let changesMade = false;
     const newData = [...details];
     const updatedOriginal = [...originalDetails];
-    let incompleteRows = [];
-
+  
     for (let i = 0; i < details.length; i++) {
       const row = details[i];
       const originalRow = originalDetails.find((r) => r.id === row.id);
+  
+      if (!hasRowChanged(row, originalRow)) continue;
 
-      console.log(`\n--- Processing row ${i + 1} ---`);
-      console.log("Current row:", row);
-      console.log("Original row:", originalRow);
-
-      // Check if row is complete
-      if (!isRowComplete(row)) {
-        console.log("❌ Row not complete, checking if partially filled...");
-        if (Object.values(row).some((v) => v && v.toString().trim() !== "")) {
-          incompleteRows.push(i + 1);
-        }
-        continue;
+      // Block empty rows
+      if (!hasAnyFieldFilled(row)) {
+        alert("Please fill at least one field before saving.");
+        return;
       }
-
-      // Check if row has actual changes
-      if (!hasRowChanged(row, originalRow)) {
-        console.log("⏭️ No changes detected for this row, skipping");
-        continue;
-      }
-
+  
       if (!row.id || row._isNew) {
-        // Creating new record
-        console.log("➕ Creating new record...");
-        changesMade = true;
         try {
-          // Remove the temporary flag before sending to API
           const { _isNew, ...rowData } = row;
-          
           const res = await fetch(`/api/clients/${id}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(rowData),
           });
-          
-          console.log("POST response status:", res.status);
-          
+  
           if (!res.ok) {
             const errorData = await res.json();
-            console.error("❌ POST error response:", errorData);
             throw new Error(errorData.error || "Failed to create detail");
           }
           const inserted = await res.json();
-          console.log("✅ POST successful:", inserted);
-
-          // Update the row with the new ID and remove the _isNew flag
           newData[i] = { ...rowData, id: inserted.id };
           updatedOriginal.push({ ...rowData, id: inserted.id });
+          changesMade = true;
         } catch (err) {
-          console.error("❌ POST error:", err);
           alert(`Failed to create new record: ${err.message}`);
           return;
         }
       } else {
-        // Updating existing record
-        console.log("📝 Updating existing record with ID:", row.id);
-        changesMade = true;
         try {
           const res = await fetch(`/api/clients/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(row),
           });
-          
-          console.log("PUT response status:", res.status);
-          
+  
           if (!res.ok) {
             const errorData = await res.json();
-            console.error("❌ PUT error response:", errorData);
             throw new Error(errorData.error || "Failed to update detail");
           }
-          
-          const responseData = await res.json();
-          console.log("✅ PUT successful:", responseData);
-
-          // Update the original details to reflect the new saved state
+  
           const idx = updatedOriginal.findIndex((r) => r.id === row.id);
           if (idx > -1) {
             updatedOriginal[idx] = { ...row };
           } else {
             updatedOriginal.push({ ...row });
           }
+          changesMade = true;
         } catch (err) {
-          console.error("❌ PUT error:", err);
           alert(`Failed to update record: ${err.message}`);
           return;
         }
       }
     }
-
-    if (incompleteRows.length > 0) {
-      alert(`Please complete all fields in row(s): ${incompleteRows.join(", ")}`);
-      return;
-    }
-
+  
     if (changesMade) {
       alert("Changes applied successfully!");
-      console.log("✅ All changes applied successfully");
-      // Update both states to reflect the saved changes
       setDetails(newData);
       setOriginalDetails(updatedOriginal);
     } else {
-      console.log("ℹ️ No changes detected - no API calls made");
       alert("No changes to apply.");
     }
+  };
+
+  // Download Excel functionality
+  const handleDownloadExcel = () => {
+    if (details.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    const exportData = details.map((row, index) => {
+      const rowData = { "S.No.": index + 1 };
+      columns.forEach((col) => {
+        // Format dates for Excel export
+        if (col.key.includes("date")) {
+          rowData[col.label] = formatDate(row[col.key]) || "";
+        } else {
+          rowData[col.label] = row[col.key] || "";
+        }
+      });
+      return rowData;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    
+    // Extract first name only
+    const firstName = clientName.split(' ')[0];
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, `${firstName} - Details`);
+    
+    // Clean filename - remove special characters and use first name
+    const cleanFileName = `${firstName.replace(/[^a-zA-Z0-9\s-]/g, '')} - Details.xlsx`;
+    XLSX.writeFile(workbook, cleanFileName);
   };
 
   const formatDate = (value) => {
     if (!value) return "";
     try {
-      return new Date(value).toISOString().split("T")[0];
+      const d = new Date(value);
+      return d.toISOString().split("T")[0]; // safe for rendering inputs
     } catch {
       return value;
     }
@@ -252,7 +251,7 @@ const ClientDetails = () => {
         <div className="space-x-2">
           <button
             onClick={handleAddRow}
-            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded"
           >
             Add Row
           </button>
@@ -261,6 +260,12 @@ const ClientDetails = () => {
             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
           >
             Apply Changes
+          </button>
+          <button
+            onClick={handleDownloadExcel}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+          >
+            Download Excel
           </button>
         </div>
       </div>
@@ -271,7 +276,9 @@ const ClientDetails = () => {
             <tr className="bg-gray-100 font-semibold text-black">
               <th className="p-2 border">S.No.</th>
               {columns.map((col) => (
-                <th key={col.key} className="p-2 border">{col.label}</th>
+                <th key={col.key} className="p-2 border">
+                  {col.label}
+                </th>
               ))}
               <th className="p-2 border">Delete</th>
             </tr>
@@ -306,6 +313,7 @@ const ClientDetails = () => {
                           }
                           onChange={(e) => handleChange(e, idx, col.key)}
                           onBlur={handleBlur}
+                          onKeyDown={handleKeyPress}
                           autoFocus
                           className="w-full border px-1 py-0.5 text-sm"
                         />

@@ -3,8 +3,13 @@ import { query } from "@/app/db";
 
 const formatDateForMySQL = (dateString) => {
   if (!dateString) return null;
-  return new Date(dateString).toISOString().split("T")[0];
+  const d = new Date(dateString);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`; // ✅ Local yyyy-mm-dd, no UTC conversion
 };
+
 
 // GET
 export async function GET(req, context) {
@@ -53,10 +58,6 @@ export async function PUT(req, context) {
     if (!detailId || isNaN(parseInt(detailId))) {
       console.log("❌ Missing or invalid detail ID");
       return NextResponse.json({ error: "Missing or invalid interaction id" }, { status: 400 });
-    }
-    if (!interaction_date) {
-      console.log("❌ Missing interaction date");
-      return NextResponse.json({ error: "Interaction date is required" }, { status: 400 });
     }
 
     // Check if the detail exists and belongs to the client
@@ -132,11 +133,6 @@ export async function POST(req, context) {
       action_required,
       follow_up_date,
     } = body;
-
-    if (!interaction_date) {
-      console.log("❌ Missing interaction date");
-      return NextResponse.json({ error: "Interaction date is required" }, { status: 400 });
-    }
 
     const sql = `
       INSERT INTO clientDetails (

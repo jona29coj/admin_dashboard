@@ -5,7 +5,7 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
 export default function AuthWrapper({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false); 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
