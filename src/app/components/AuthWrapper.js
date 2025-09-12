@@ -36,7 +36,7 @@ export default function AuthWrapper({ children }) {
   }, []);
 
   return (
-    isAuthenticated && (
+     isAuthenticated && (
     <>
       <div className="fixed w-[15%] h-screen">
         <Sidebar />

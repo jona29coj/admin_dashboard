@@ -12,6 +12,12 @@ const ClientDetails = () => {
   const [originalDetails, setOriginalDetails] = useState([]);
   const [clientName, setClientName] = useState("Client Details");
   const [editing, setEditing] = useState({ row: null, key: null });
+  // New state for contact information
+  const [contactInfo, setContactInfo] = useState({
+    name: "",
+    email: "",
+    phone: ""
+  });
 
   const fetchDetails = async () => {
     try {
@@ -22,13 +28,22 @@ const ClientDetails = () => {
       const safeData = Array.isArray(data) ? data : [];
       setDetails(safeData);
       setOriginalDetails(JSON.parse(JSON.stringify(safeData)));
+      
+      // You might want to fetch contact info from your API as well
+      // For now, we'll set it from the query parameter
+      if (nameFromQuery) {
+        setContactInfo(prev => ({...prev, name: nameFromQuery}));
+      }
     } catch (error) {
       console.error("Failed to fetch client details:", error);
     }
   };
 
   useEffect(() => {
-    if (nameFromQuery) setClientName(nameFromQuery);
+    if (nameFromQuery) {
+      setClientName(nameFromQuery);
+      setContactInfo(prev => ({...prev, name: nameFromQuery}));
+    }
     if (id) fetchDetails();
   }, [id, nameFromQuery]);
 
@@ -55,6 +70,14 @@ const ClientDetails = () => {
     const updated = [...details];
     updated[rowIndex][key] = e.target.value;
     setDetails(updated);
+  };
+
+  // Handle contact info changes
+  const handleContactChange = (e, field) => {
+    setContactInfo(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
   };
 
   const handleBlur = () => setEditing({ row: null, key: null });
@@ -100,6 +123,7 @@ const ClientDetails = () => {
   };
 
   const columns = [
+    { key: "s_no", label: "S.No." },
     { key: "interaction_date", label: "Interaction Date" },
     { key: "interaction_type", label: "Interaction Type" },
     { key: "members", label: "Members" },
@@ -110,19 +134,23 @@ const ClientDetails = () => {
 
   const hasRowChanged = (currentRow, originalRow) => {
     if (!originalRow) return true;
-    return columns.some((col) => {
-      const currentValue = currentRow[col.key] || "";
-      const originalValue = originalRow[col.key] || "";
-      return currentValue !== originalValue;
-    });
+    return columns
+      .filter(col => col.key !== "s_no")
+      .some((col) => {
+        const currentValue = currentRow[col.key] || "";
+        const originalValue = originalRow[col.key] || "";
+        return currentValue !== originalValue;
+      });
   };
 
   // Checks that at least one field is filled
   const hasAnyFieldFilled = (row) => {
-    return columns.some(
-      (col) =>
-        row[col.key] !== undefined && row[col.key].toString().trim() !== ""
-    );
+    return columns
+      .filter(col => col.key !== "s_no")
+      .some(
+        (col) =>
+          row[col.key] !== undefined && row[col.key].toString().trim() !== ""
+      );
   };
 
   const handleApplyChanges = async () => {
@@ -209,8 +237,11 @@ const ClientDetails = () => {
     }
 
     const exportData = details.map((row, index) => {
-      const rowData = { "S.No.": index + 1 };
+      const rowData = {};
       columns.forEach((col) => {
+        // Skip s_no as we'll handle it separately
+        if (col.key === "s_no") return;
+        
         // Format dates for Excel export
         if (col.key.includes("date")) {
           rowData[col.label] = formatDate(row[col.key]) || "";
@@ -219,6 +250,11 @@ const ClientDetails = () => {
         }
       });
       return rowData;
+    });
+
+    // Add S.No. as the first column
+    exportData.forEach((row, index) => {
+      row["S.No."] = index + 1;
     });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -244,8 +280,16 @@ const ClientDetails = () => {
     }
   };
 
+  // Sticky header styles
+  const stickyHeaderStyles = {
+    position: "sticky",
+    top: 0,
+    background: "#f3f4f6", // Tailwind's bg-gray-100
+    zIndex: 2,
+  };
+
   return (
-    <div className="p-4 text-black">
+    <div className="p-4 text-black bg-gray-100">
       <div className="flex justify-between mb-4">
         <h2 className="text-2xl font-bold">{clientName}</h2>
         <div className="space-x-2">
@@ -270,73 +314,139 @@ const ClientDetails = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-300 text-sm table-fixed">
-          <thead>
-            <tr className="bg-gray-100 font-semibold text-black">
-              <th className="p-2 border">S.No.</th>
-              {columns.map((col) => (
-                <th key={col.key} className="p-2 border">
-                  {col.label}
+      {/* Contact Information Section */}
+      <div className="mb-2 p-2 bg-white rounded shadow">
+        <h3 className="text-lg font-semibold mb-1">Contact Information</h3>
+        <div className="grid grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs mb-1 font-semibold">Name</label>
+            <input
+              type="text"
+              onChange={(e) => handleContactChange(e, "name")}
+              className="w-full p-1 border border-gray-300 rounded text-sm"
+              placeholder="Point of Contact"
+            />
+          </div>
+          <div>
+            <label className="block text-xs mb-1 font-semibold">Mail-id</label>
+            <input
+              type="email"
+              value={contactInfo.email}
+              onChange={(e) => handleContactChange(e, "email")}
+              className="w-full p-1 border border-gray-300 rounded text-sm"
+              placeholder="Email Address"
+            />
+          </div>
+          <div>
+            <label className="block text-xs mb-1 font-semibold">Number</label>
+            <input
+              type="tel"
+              value={contactInfo.phone}
+              onChange={(e) => handleContactChange(e, "phone")}
+              className="w-full p-1 border border-gray-300 rounded text-sm"
+              placeholder="Phone Number"
+            />
+          </div>
+          <div>
+            <label className="block text-xs mb-1 font-semibold">Elements POC</label>
+            <input
+              type="tel"
+              value={contactInfo.phone}
+              onChange={(e) => handleContactChange(e, "phone")}
+              className="w-full p-1 border border-gray-300 rounded text-sm"
+              placeholder="Name"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full overflow-auto border-t-1 border-b-1">
+        <div className="overflow-y-auto" style={{ maxHeight: "67vh"}}>
+          <table className="min-w-full bg-white border border-gray-300 text-sm table-fixed">
+            <thead>
+              <tr className="bg-gray-100 font-semibold text-black">
+                {columns.map((col) => (
+                  <th
+                    key={col.key}
+                    className="p-2 border"
+                    style={stickyHeaderStyles}
+                  >
+                    {col.label}
+                  </th>
+                ))}
+                <th className="p-2 border" style={stickyHeaderStyles}>
+                  Delete
                 </th>
-              ))}
-              <th className="p-2 border">Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            {details.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={columns.length + 2}
-                  className="p-4 text-center text-gray-500"
-                >
-                  No details found.
-                </td>
               </tr>
-            ) : (
-              details.map((item, idx) => (
-                <tr key={item.id || `new-${idx}`} className="hover:bg-gray-50">
-                  <td className="p-2 border text-center">{idx + 1}</td>
-                  {columns.map((col) => (
-                    <td
-                      key={col.key}
-                      className="p-2 border cursor-pointer"
-                      onDoubleClick={() => handleDoubleClick(idx, col.key)}
-                    >
-                      {editing.row === idx && editing.key === col.key ? (
-                        <input
-                          type={col.key.includes("date") ? "date" : "text"}
-                          value={
-                            col.key.includes("date")
-                              ? formatDate(item[col.key])
-                              : item[col.key] || ""
-                          }
-                          onChange={(e) => handleChange(e, idx, col.key)}
-                          onBlur={handleBlur}
-                          onKeyDown={handleKeyPress}
-                          autoFocus
-                          className="w-full border px-1 py-0.5 text-sm"
-                        />
-                      ) : col.key.includes("date") ? (
-                        formatDate(item[col.key])
-                      ) : (
-                        item[col.key]
-                      )}
-                    </td>
-                  ))}
-                  <td className="p-2 border text-center">
-                    <button
-                      onClick={() => handleDeleteRow(item.id, idx)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      🗑
-                    </button>
+            </thead>
+            <tbody>
+              {details.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length + 1}
+                    className="p-4 text-center text-gray-500"
+                  >
+                    No details found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                details.map((item, idx) => (
+                  <tr key={item.id || `new-${idx}`} className="hover:bg-gray-50">
+                    {columns.map((col) => {
+                      // For s_no, display the index
+                      if (col.key === "s_no") {
+                        return (
+                          <td
+                            key={col.key}
+                            className="p-2 border text-center"
+                          >
+                            {idx + 1}
+                          </td>
+                        );
+                      }
+                      
+                      return (
+                        <td
+                          key={col.key}
+                          className="p-2 border cursor-pointer"
+                          onDoubleClick={() => handleDoubleClick(idx, col.key)}
+                        >
+                          {editing.row === idx && editing.key === col.key ? (
+                            <input
+                              type={col.key.includes("date") ? "date" : "text"}
+                              value={
+                                col.key.includes("date")
+                                  ? formatDate(item[col.key])
+                                  : item[col.key] || ""
+                              }
+                              onChange={(e) => handleChange(e, idx, col.key)}
+                              onBlur={handleBlur}
+                              onKeyDown={handleKeyPress}
+                              autoFocus
+                              className="w-full border px-1 py-0.5 text-sm"
+                            />
+                          ) : col.key.includes("date") ? (
+                            formatDate(item[col.key])
+                          ) : (
+                            item[col.key]
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="p-2 border text-center">
+                      <button
+                        onClick={() => handleDeleteRow(item.id, idx)}
+                        className="text-red-500 hover:text-red-700 text-lg"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
