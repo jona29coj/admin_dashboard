@@ -21,11 +21,9 @@ const Sidebar = () => {
   const links = [
     { href: "/", label: "Dashboard", icon: <FaTachometerAlt /> },
     { href: "/clients", label: "Clients", icon: <FaUsers /> },
-    { href: "/elementsscore", label: "Elements Score", icon: <FaChartLine /> },
     { href: "/alerts", label: "Alerts", icon: <FaBell /> },
     { href: "/download", label: "Download", icon: <FaDownload /> },
     { href: "/clientpipeline", label: "Client Pipeline", icon: <FaProjectDiagram /> },
-    { href: "/control", label: "Control", icon: <FaSlidersH /> },
     { href: "/prediction", label: "Prediction", icon: <FaSlidersH /> },
   ];
 

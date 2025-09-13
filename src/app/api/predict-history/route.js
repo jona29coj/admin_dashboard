@@ -18,7 +18,7 @@ export async function GET(req) {
     // --- Fetch predictions ---
     const predResult = await pgQuery(
       `SELECT date, hour, predicted_kvah
-       FROM prediction
+       FROM prediction_history
        WHERE date = $1
        ORDER BY hour`,
       [date]
