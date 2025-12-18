@@ -15,7 +15,7 @@ export async function GET(req) {
     }
 
     const result = await pgQuery(
-      `SELECT id, username, check_in, check_out, work_hours, status
+      `SELECT id, username, check_in, check_out, work_hours, status, work_update
        FROM attendance
        WHERE username = $1
        ORDER BY date(check_in) DESC`,
@@ -43,6 +43,7 @@ export async function GET(req) {
         check_out: record.check_out,
         work_hours: workHours,
         status: record.status,
+        work_update: record.work_update || "-",
       };
     });
 

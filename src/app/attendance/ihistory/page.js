@@ -67,6 +67,7 @@ const AttendanceIHistory = () => {
               <th className="px-6 py-3 text-sm font-semibold text-left">Check-Out</th>
               <th className="px-6 py-3 text-sm font-semibold text-left">Total Hours</th>
               <th className="px-6 py-3 text-sm font-semibold text-left">Status</th>
+              <th className="px-6 py-3 text-sm font-semibold text-left">Work Update</th>
             </tr>
           </thead>
           <tbody>
@@ -98,6 +99,7 @@ const AttendanceIHistory = () => {
                       ? "Present"
                       : "Ongoing"
                     : "Absent");
+                const workUpdate = record.work_update || "-";
 
                 return (
                   <tr
@@ -124,6 +126,9 @@ const AttendanceIHistory = () => {
                       }`}
                     >
                       {status}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 whitespace-pre-wrap break-words max-w-lg" title={workUpdate}>
+                      {workUpdate}
                     </td>
                   </tr>
                 );

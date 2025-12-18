@@ -23,8 +23,6 @@ export async function GET(req) {
     }
 
     const record = result[0];
-
-    // Format work_hours if present
     if (record.work_hours) {
       const wh = record.work_hours;
       const h = String(Math.floor(wh.hours || 0)).padStart(2, "0");
@@ -43,11 +41,11 @@ export async function GET(req) {
 // POST: Check-in or Check-out
 export async function POST(req) {
   try {
-    const { username, action, timestamp } = await req.json();
+    const { username, action, timestamp, work_update } = await req.json();
     const today = moment().tz("Asia/Kolkata").format("YYYY-MM-DD");
 
     if (action === "checkin") {
-      // Prevent multiple check-ins on same day
+      // Prevent multiple check-ins
       const existing = await pgQuery(
         `SELECT * FROM attendance
          WHERE username = $1 AND DATE(check_in) = $2`,
@@ -65,24 +63,34 @@ export async function POST(req) {
         "INSERT INTO attendance (username, check_in) VALUES ($1, $2)",
         [username, timestamp]
       );
+
       return NextResponse.json({ message: "Checked in successfully" });
     }
 
     if (action === "checkout") {
+      // Require work update
+      if (!work_update || work_update.trim() === "") {
+        return NextResponse.json(
+          { error: "Please provide a work update before checking out." },
+          { status: 400 }
+        );
+      }
+
       const result = await pgQuery(
         `UPDATE attendance
          SET check_out = $1,
-             work_hours = AGE($1, check_in)
-         WHERE username = $2
-         AND DATE(check_in) = $3
+             work_hours = AGE($1, check_in),
+             work_update = $2
+         WHERE username = $3
+         AND DATE(check_in) = $4
          AND check_out IS NULL
-         RETURNING check_in, check_out, work_hours`,
-        [timestamp, username, today]
+         RETURNING check_in, check_out, work_hours, work_update`,
+        [timestamp, work_update, username, today]
       );
 
       if (result.length === 0) {
         return NextResponse.json(
-          { error: "No active check-in found for today" },
+          { error: "No active check-in found for today or already checked out." },
           { status: 400 }
         );
       }
@@ -99,10 +107,7 @@ export async function POST(req) {
 
       return NextResponse.json({
         message: "Checked out successfully",
-        data: {
-          ...record,
-          work_hours: totalTime,
-        },
+        data: { ...record, work_hours: totalTime },
       });
     }
 

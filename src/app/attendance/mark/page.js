@@ -16,13 +16,14 @@ const MarkAttendance = () => {
   const [workSummary, setWorkSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [alreadyMarked, setAlreadyMarked] = useState(false);
+  const [workUpdate, setWorkUpdate] = useState("");
   const [currentDate, setCurrentDate] = useState(
     moment().tz("Asia/Kolkata").format("dddd, DD MMMM YYYY")
   );
   const [userLocation, setUserLocation] = useState(null);
   const [canCheckIn, setCanCheckIn] = useState(false);
 
-  // Fetch username from /api/auth on mount
+  // ✅ Fetch username from /api/auth on mount
   useEffect(() => {
     const fetchUsername = async () => {
       try {
@@ -38,7 +39,7 @@ const MarkAttendance = () => {
     fetchUsername();
   }, []);
 
-  // Update current date every minute
+  // ✅ Update current date every minute
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentDate(moment().tz("Asia/Kolkata").format("dddd, DD MMMM YYYY"));
@@ -46,7 +47,7 @@ const MarkAttendance = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch today's attendance once username is available
+  // ✅ Fetch today's attendance once username is available
   useEffect(() => {
     if (!username) return;
 
@@ -67,18 +68,19 @@ const MarkAttendance = () => {
               totalTime: record.work_hours,
               checkIn: moment(record.check_in).tz("Asia/Kolkata").format("hh:mm A"),
               checkOut: moment(record.check_out).tz("Asia/Kolkata").format("hh:mm A"),
+              workUpdate: record.work_update || "No update provided",
             });
           }
         }
       } catch (err) {
-        console.error(err);
+        console.error("Fetch attendance error:", err);
       }
     };
 
     fetchTodayAttendance();
   }, [username]);
 
-  // Timer logic
+  // ✅ Timer logic
   useEffect(() => {
     let timer;
     if (isCheckedIn && startTime) {
@@ -89,7 +91,7 @@ const MarkAttendance = () => {
     return () => clearInterval(timer);
   }, [isCheckedIn, startTime]);
 
-  // Geolocation check
+  // ✅ Geolocation check
   useEffect(() => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
@@ -137,6 +139,7 @@ const MarkAttendance = () => {
     return `${h}:${m}:${s}`;
   };
 
+  // ✅ Handle Check-in
   const handleCheckIn = async () => {
     if (!username) return;
     try {
@@ -146,28 +149,35 @@ const MarkAttendance = () => {
       const res = await fetch("/api/attendance/mark", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, action: "checkin", timestamp }),
+        body: JSON.stringify({
+          username,
+          action: "checkin",
+          timestamp,
+        }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(errData.error || "Check-in failed");
-        return;
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Check-in failed");
 
       setIsCheckedIn(true);
       setStartTime(Date.now());
       setWorkSummary(null);
     } catch (err) {
       console.error(err);
-      alert("Error during check-in. Please try again.");
+      alert(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Handle Check-out with work update validation
   const handleCheckOut = async () => {
     if (!username) return;
+    if (!workUpdate.trim()) {
+      alert("Please enter your work update before checking out.");
+      return;
+    }
+
     try {
       setLoading(true);
       const timestamp = moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss");
@@ -175,7 +185,12 @@ const MarkAttendance = () => {
       const res = await fetch("/api/attendance/mark", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, action: "checkout", timestamp }),
+        body: JSON.stringify({
+          username,
+          action: "checkout",
+          timestamp,
+          work_update: workUpdate.trim(),
+        }),
       });
 
       const data = await res.json();
@@ -186,18 +201,21 @@ const MarkAttendance = () => {
         totalTime: data.data?.work_hours || formatTime(elapsedTime),
         checkIn: moment(startTime).tz("Asia/Kolkata").format("hh:mm A"),
         checkOut: moment().tz("Asia/Kolkata").format("hh:mm A"),
+        workUpdate: workUpdate.trim(),
       });
       setElapsedTime(0);
       setStartTime(null);
       setAlreadyMarked(true);
+      setWorkUpdate("");
     } catch (err) {
       console.error(err);
-      alert("Error during check-out. Please try again.");
+      alert(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Fallback while username is loading
   if (!username) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -221,10 +239,27 @@ const MarkAttendance = () => {
               Work Time:{" "}
               <span className="text-blue-600">{formatTime(elapsedTime)}</span>
             </p>
+
+            {/* ✅ Work Update Input */}
+            <div className="mb-4">
+              <textarea
+                value={workUpdate}
+                onChange={(e) => setWorkUpdate(e.target.value)}
+                placeholder="Enter your work update..."
+                className="w-full p-2 border rounded-lg resize-none text-black placeholder-gray-400"
+                rows={3}
+              />
+            </div>
+
+            {/* ✅ Disable checkout until work update entered */}
             <button
               onClick={handleCheckOut}
-              disabled={loading}
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl shadow-md transition disabled:opacity-50"
+              disabled={loading || !workUpdate.trim()}
+              className={`w-full font-semibold py-3 rounded-xl shadow-md transition ${
+                workUpdate.trim()
+                  ? "bg-red-500 hover:bg-red-600 text-white"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
             >
               {loading ? "Checking Out..." : "Check Out"}
             </button>
@@ -247,20 +282,29 @@ const MarkAttendance = () => {
           </button>
         )}
 
+        {/* ✅ Summary (only when available) */}
         {workSummary && (
           <div className="mt-6 p-4 bg-gray-50 border rounded-xl text-left shadow-inner">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
               Attendance Summary
             </h2>
-            <p className="text-gray-700">
-              ✅ Check-In: <span className="font-medium">{workSummary.checkIn}</span>
+            <p className="text-gray-700 mt-2">
+              📝 Work Update:{" "}
+              <span className="font-medium">{workSummary.workUpdate}</span>
             </p>
             <p className="text-gray-700">
-              ⏰ Check-Out: <span className="font-medium">{workSummary.checkOut}</span>
+              ✅ Check-In:{" "}
+              <span className="font-medium">{workSummary.checkIn}</span>
+            </p>
+            <p className="text-gray-700">
+              ⏰ Check-Out:{" "}
+              <span className="font-medium">{workSummary.checkOut}</span>
             </p>
             <p className="text-gray-700">
               🕒 Total Work Time:{" "}
-              <span className="font-medium text-blue-600">{workSummary.totalTime}</span>
+              <span className="font-medium text-blue-600">
+                {workSummary.totalTime}
+              </span>
             </p>
           </div>
         )}
