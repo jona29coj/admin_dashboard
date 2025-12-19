@@ -30,8 +30,17 @@ export async function GET(req) {
     const endDateTime = `${today}+23:00`;
 
     const apiRes = await fetch(
-      `https://mw.elementsenergies.com/api/hkVAhconsumption?startDateTime=${startDateTime}&endDateTime=${endDateTime}`
-    );
+  `https://mw.elementsenergies.com/api/hkVAhconsumptiontest?startDateTime=${startDateTime}&endDateTime=${endDateTime}`,
+  {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer 9cF7Gk2MZpQ8XvT5LbR3NdYqWjK6HsA4",
+      "Content-Type": "application/json",
+    },
+  }
+);
+
+
 
     if (!apiRes.ok) {
       throw new Error(`Failed to fetch actuals: ${apiRes.statusText}`);
@@ -50,9 +59,10 @@ export async function GET(req) {
 
     return NextResponse.json({ predictions, actuals });
   } catch (error) {
-    console.error("Predict API error:", error);
+    console.error("Predict API error:", error.message);
+    console.error(error.stack);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: error.message },
       { status: 500 }
     );
   }
